@@ -31,12 +31,6 @@ ChatLogic::~ChatLogic()
 {
     // delete chatbot instance
     delete _chatBot;
-
-    // delete all edges
-    for (auto it = std::begin(_edges); it != std::end(_edges); ++it)
-    {
-        delete *it;
-    }
 }
 
 template <typename T>
@@ -120,7 +114,7 @@ void ChatLogic::LoadAnswerGraphFromFile(std::string filename)
                         // create new element if ID does not yet exist
                         if (newNode == _nodes.end())
                         {
-                            _nodes.push_back(std::make_unique<GraphNode>(id));
+                            _nodes.emplace_back(std::make_unique<GraphNode>(id));
                             newNode = _nodes.end() - 1; // get iterator to last element
 
                             // add all answers to current node
@@ -152,17 +146,23 @@ void ChatLogic::LoadAnswerGraphFromFile(std::string filename)
                             }
 
                             // create new edge
-                            GraphEdge *edge = new GraphEdge(id);
+#if 0
+                            std::unique_ptr<GraphEdge> edge = std::make_unique<GraphEdge>(id);
                             edge->SetChildNode((*childNode).get());
                             edge->SetParentNode((*parentNode).get());
-                            _edges.push_back(edge);
+                            _edges.push_back(std::move(edge));
+#endif
+                            _edges.emplace_back(std::make_unique<GraphEdge>(id));
+                            GraphEdge *edge = _edges.back().get();
+                            edge->SetChildNode((*childNode).get());
+                            edge->SetParentNode((*parentNode).get());
 
                             // find all keywords for current node
                             AddAllTokensToElement("KEYWORD", tokens, *edge);
 
                             // store reference in child node and parent node
                             (*childNode)->AddEdgeToParentNode(edge);
-                            (*parentNode)->AddEdgeToChildNode(edge);
+                            (*parentNode)->AddEdgeToChildNode(std::move(_edges.back()));
                         }
                     }
                 }
