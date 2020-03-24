@@ -14,23 +14,10 @@
 
 ChatLogic::ChatLogic()
 {
-    //// STUDENT CODE
-    ////
-
-    // create instance of chatbot
-    _chatBot = new ChatBot("../images/chatbot.png");
-
-    // add pointer to chatlogic so that chatbot answers can be passed on to the GUI
-    _chatBot->SetChatLogicHandle(this);
-
-    ////
-    //// EOF STUDENT CODE
 }
 
 ChatLogic::~ChatLogic()
 {
-    // delete chatbot instance
-    delete _chatBot;
 }
 
 template <typename T>
@@ -146,14 +133,7 @@ void ChatLogic::LoadAnswerGraphFromFile(std::string filename)
                             }
 
                             // create new edge
-#if 0
                             std::unique_ptr<GraphEdge> edge = std::make_unique<GraphEdge>(id);
-                            edge->SetChildNode((*childNode).get());
-                            edge->SetParentNode((*parentNode).get());
-                            _edges.push_back(std::move(edge));
-#endif
-                            _edges.emplace_back(std::make_unique<GraphEdge>(id));
-                            GraphEdge *edge = _edges.back().get();
                             edge->SetChildNode((*childNode).get());
                             edge->SetParentNode((*parentNode).get());
 
@@ -161,8 +141,8 @@ void ChatLogic::LoadAnswerGraphFromFile(std::string filename)
                             AddAllTokensToElement("KEYWORD", tokens, *edge);
 
                             // store reference in child node and parent node
-                            (*childNode)->AddEdgeToParentNode(edge);
-                            (*parentNode)->AddEdgeToChildNode(std::move(_edges.back()));
+                            (*childNode)->AddEdgeToParentNode(edge.get());
+                            (*parentNode)->AddEdgeToChildNode(std::move(edge));
                         }
                     }
                 }
@@ -174,7 +154,6 @@ void ChatLogic::LoadAnswerGraphFromFile(std::string filename)
         } // eof loop over all lines in the file
 
         file.close();
-
     } // eof check for file availability
     else
     {
@@ -201,9 +180,10 @@ void ChatLogic::LoadAnswerGraphFromFile(std::string filename)
         }
     }
 
-    // add chatbot to graph root node
-    _chatBot->SetRootNode(rootNode);
-    rootNode->MoveChatbotHere(_chatBot);
+    ChatBot temp("../images/chatbot.png");
+    temp.SetChatLogicHandle(this);
+    temp.SetRootNode(rootNode);
+    rootNode->MoveChatbotHere(std::move(temp));
 }
 
 void ChatLogic::SetPanelDialogHandle(ChatBotPanelDialog *panelDialog)
